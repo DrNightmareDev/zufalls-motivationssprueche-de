@@ -1,0 +1,5 @@
+{
+  "name": "aufwind",
+  "private": true,
+  "scripts": { "test": "node --test" }
+}

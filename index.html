@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Aufwind – Ein Spruch für jetzt.</title>
+<meta name="description" content="Aufwind zeigt dir bei jedem Besuch einen zufälligen, selbst formulierten deutschen Motivationsspruch – ohne Anmeldung, ohne Tracking.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <h1 class="wordmark">Aufwind</h1>
+  <p class="tagline">Ein Spruch für jetzt.</p>
+</header>
+
+<main id="main">
+  <p id="quote" class="quote" aria-live="polite" aria-atomic="true"></p>
+  <div class="actions">
+    <button type="button" id="next-button" aria-label="Noch einen Spruch anzeigen">Noch einen</button>
+    <button type="button" id="copy-button" aria-label="Spruch kopieren">Kopieren</button>
+  </div>
+  <noscript>
+    <p class="noscript-hint">Diese Seite benötigt JavaScript, um Sprüche anzuzeigen. Bitte aktiviere JavaScript in deinem Browser.</p>
+  </noscript>
+</main>
+
+<div id="snackbar" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<footer class="site-footer">
+  <p>Leertaste, Pfeil-rechts oder N zeigt den nächsten Spruch.</p>
+</footer>
+
+<script src="assets/quotes.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
