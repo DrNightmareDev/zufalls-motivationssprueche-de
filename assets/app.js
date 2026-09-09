@@ -98,6 +98,91 @@
     return true;
   }
 
+  // --- 7. Kopieren in die Zwischenablage -------------------------------------
+
+  // document.execCommand('copy') ist offiziell deprecated. Unter file:// gibt
+  // es aber keine funktionierende Alternative (die Clipboard-API verlangt
+  // einen secure context), deshalb bleibt dieser Fallback bewusst bestehen
+  // (siehe docs/ARCHITEKTUR.md, Abschnitt 7.2 und Risiko R12).
+  function legacyCopy(text, doc) {
+    if (!doc || !doc.body || typeof doc.execCommand !== 'function') { return false; }
+    var area = doc.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.setAttribute('aria-hidden', 'true');
+    area.style.position = 'fixed'; // fixed + opacity 0 => kein Scroll-Sprung,
+    area.style.top = '0';          // und kein sichtbares Aufblitzen
+    area.style.left = '0';
+    area.style.opacity = '0';
+    doc.body.appendChild(area);
+    var ok = false;
+    try {
+      area.focus();
+      area.select();
+      if (typeof area.setSelectionRange === 'function') {
+        area.setSelectionRange(0, text.length); // iOS-Eigenheit
+      }
+      ok = doc.execCommand('copy') === true;
+    } catch (err) {
+      ok = false;
+    } finally {
+      doc.body.removeChild(area);
+    }
+    return ok ? 'execCommand' : false;
+  }
+
+  function copyText(text, deps) {
+    var nav = (deps && deps.navigator) || (typeof navigator !== 'undefined' ? navigator : null);
+    var doc = (deps && deps.document) || (typeof document !== 'undefined' ? document : null);
+
+    // 1. Moderner Weg (nur in secure contexts verfuegbar, unter file:// meist nicht).
+    if (nav && nav.clipboard && typeof nav.clipboard.writeText === 'function') {
+      return nav.clipboard.writeText(text)
+        .then(function () { return 'clipboard'; })
+        .catch(function () { return legacyCopy(text, doc); });
+    }
+    // 2. Fallback fuer file:// und aeltere Browser.
+    return Promise.resolve(legacyCopy(text, doc));
+  }
+
+  // --- 7.4 Snackbar -----------------------------------------------------------
+
+  function showSnackbar(elements, message, timeoutMs) {
+    var ms = (typeof timeoutMs === 'number') ? timeoutMs : 2000;
+    var snackbar = elements.snackbar;
+    snackbar.textContent = message;
+    if (snackbar.classList) { snackbar.classList.add('snackbar--visible'); }
+
+    // Ein laufender Timer wird zurueckgesetzt, nicht gestapelt.
+    if (snackbar._aufwindHideTimer) {
+      clearTimeout(snackbar._aufwindHideTimer);
+    }
+    snackbar._aufwindHideTimer = setTimeout(function () {
+      if (snackbar.classList) { snackbar.classList.remove('snackbar--visible'); }
+      snackbar._aufwindHideTimer = null;
+    }, ms);
+  }
+
+  // --- 7.3 Rueckmeldung an den Nutzer (ehrlich, nicht geschoent) --------------
+
+  function handleCopyClick(state, elements) {
+    return copyText(state.currentText).then(function (result) {
+      if (result === 'clipboard' || result === 'execCommand') {
+        showSnackbar(elements, 'Kopiert', 2000);
+      } else {
+        showSnackbar(
+          elements,
+          'Kopieren hat nicht geklappt – markiere den Spruch und drücke Strg+C.',
+          4000
+        );
+      }
+      // Fokus zurueck auf den Button, damit Tastaturnutzer ihren Platz nicht verlieren.
+      if (elements.copyButton && typeof elements.copyButton.focus === 'function') {
+        elements.copyButton.focus();
+      }
+    });
+  }
+
   // --- DOM-nahe Funktionen (nicht unit-getestet) ----------------------------
 
   function queryElements(doc) {
@@ -114,15 +199,25 @@
     return { quote: quote, nextButton: nextButton, copyButton: copyButton, snackbar: snackbar };
   }
 
-  function renderQuote(elements, text) {
+  function renderQuote(elements, text, skipAnimation) {
     elements.quote.textContent = text;
+    if (!elements.quote.classList) { return; }
+    // Klasse entfernen und Reflow erzwingen, damit die Animation bei jedem
+    // Spruchwechsel neu startet (auch bei schnellem Weiterblaettern).
+    elements.quote.classList.remove('quote--fade');
+    if (skipAnimation) { return; }
+    void elements.quote.offsetWidth;
+    elements.quote.classList.add('quote--fade');
   }
 
   function showNextQuote(state, elements) {
+    var isFirstRender = state.currentIndex === -1;
     var index = state.bag.next();
     state.currentIndex = index;
     state.currentText = state.quotes[index];
-    renderQuote(elements, state.currentText);
+    // Beim allerersten Render wird die Fade-Animation uebersprungen, damit
+    // nichts sichtbar einblendet (siehe docs/ARCHITEKTUR.md, Abschnitt 6.3).
+    renderQuote(elements, state.currentText, isFirstRender);
   }
 
   function initApp(doc, quotes, options) {
@@ -145,6 +240,10 @@
 
     elements.nextButton.addEventListener('click', function () {
       showNextQuote(state, elements);
+    });
+
+    elements.copyButton.addEventListener('click', function () {
+      handleCopyClick(state, elements);
     });
 
     doc.addEventListener('keydown', function (event) {
@@ -170,6 +269,10 @@
     avoidImmediateRepeat: avoidImmediateRepeat,
     createShuffleBag: createShuffleBag,
     shouldHandleNextKey: shouldHandleNextKey,
+    copyText: copyText,
+    legacyCopy: legacyCopy,
+    showSnackbar: showSnackbar,
+    handleCopyClick: handleCopyClick,
     queryElements: queryElements,
     renderQuote: renderQuote,
     showNextQuote: showNextQuote,

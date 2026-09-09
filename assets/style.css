@@ -1,29 +1,243 @@
-/* Minimal placeholder styling.
-   Full styling (gradient, dark mode, responsive layout, focus rings,
-   fade transition) is a later package (see docs/ARCHITEKTUR.md, Paket 6). */
+/* assets/style.css
+ * Aufwind – komplettes Styling: Farbverlauf, automatischer Dark-Mode
+ * (ausschliesslich per prefers-color-scheme, kein JS, kein localStorage),
+ * responsives Layout ohne Scrollen, Fokusring, Snackbar, sanfter Fade.
+ * Siehe docs/ARCHITEKTUR.md, Abschnitt 8.
+ */
 
 * {
   box-sizing: border-box;
 }
 
+:root {
+  color-scheme: light dark;
+
+  /* Helles Farbschema. Kontrastwerte gemessen (WCAG-Formel), siehe Bericht:
+     --text auf --bg-from/--bg-to: 13.07-13.87:1 (AAA)
+     --muted auf --bg-from/--bg-to: 6.77-7.19:1  (AA)
+     --border auf --bg-from/--bg-to: 4.25-4.51:1 (UI-Kontrast, >3:1)
+     --focus auf --bg-to: 5.99:1                  (UI-Kontrast, >3:1) */
+  --bg-from: #f6f9ff;
+  --bg-to: #eaf3ff;
+  --text: #1e293b;
+  --muted: #475569;
+  --surface: #ffffff;
+  --border: #64748b;
+  --focus: #1d4ed8;
+  --on-focus: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dunkles Farbschema. Kontrastwerte gemessen:
+       --text auf --bg-from/--bg-to: 13.35-16.30:1 (AAA)
+       --muted auf --bg-from/--bg-to: 9.85-12.02:1 (AAA)
+       --border auf --bg-from/--bg-to: 5.71-6.96:1 (UI-Kontrast, >3:1)
+       --focus auf --bg-to: 8.11:1                  (UI-Kontrast, >3:1) */
+    --bg-from: #0f172a;
+    --bg-to: #1e293b;
+    --text: #f1f5f9;
+    --muted: #cbd5e1;
+    --surface: #1e293b;
+    --border: #94a3b8;
+    --focus: #93c5fd;
+    --on-focus: #0f172a;
+  }
+}
+
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100vh;  /* Fallback fuer aeltere Browser, siehe 8.1 */
+  min-height: 100dvh; /* beruecksichtigt mobile Adress-/Werkzeugleisten */
   display: flex;
   flex-direction: column;
+  background: linear-gradient(160deg, var(--bg-from), var(--bg-to)) fixed;
+  background-color: var(--bg-to); /* Absicherung gegen weissen Rand beim Ueberscrollen */
+  color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
-main {
+/* --- Header ------------------------------------------------------------- */
+
+.site-header {
+  padding: clamp(1rem, 4vw, 1.75rem) clamp(1rem, 4vw, 2.5rem) 0;
+  text-align: center;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+}
+
+/* Auf sehr schmalen Screens Platz fuer den Spruch schaffen (Story 6/11). */
+@media (max-height: 480px), (max-width: 359px) {
+  .tagline {
+    display: none;
+  }
+}
+
+/* --- Hauptbereich --------------------------------------------------------- */
+
+main#main {
   flex: 1;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  min-height: 0;
+}
+
+.quote {
+  margin: 0 0 clamp(1.25rem, 4vh, 2rem);
+  max-width: 680px;
+  min-height: 2.7em; /* verhindert Button-Sprung zwischen kurzem/langem Spruch */
+  font-size: clamp(1.35rem, 4.2vw, 2.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+  text-align: center;
+  text-wrap: balance; /* progressive enhancement */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.quote--fade {
+  animation: quote-fade-in 220ms ease-out;
+}
+
+@keyframes quote-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: center;
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.7rem 1.5rem;
+  border: 2px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    transform 150ms ease, box-shadow 150ms ease;
+}
+
+#next-button {
+  background: var(--focus);
+  color: var(--on-focus);
+  border-color: var(--focus);
+}
+
+#next-button:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+#next-button:active {
+  transform: translateY(1px);
+}
+
+#copy-button {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+#copy-button:hover {
+  background: rgba(100, 116, 139, 0.12);
+}
+
+#copy-button:active {
+  transform: translateY(1px);
+}
+
+/* Sichtbarer Fokusring - wird nie entfernt (Story 15 / 8.4). */
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* --- Hinweistext ohne JavaScript ------------------------------------------ */
+
+.noscript-hint {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* --- Snackbar --------------------------------------------------------------
+   Bleibt dauerhaft im DOM (kein display:none), damit Screenreader die
+   Statusaenderung zuverlaessig ankuendigen (siehe 7.4). */
+
+#snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(1rem, 6vh, 2.5rem);
+  transform: translate(-50%, 8px);
+  max-width: calc(100vw - 2rem);
+  padding: 0.65rem 1.15rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg-to);
+  font-size: 0.95rem;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms;
+  z-index: 10;
+}
+
+#snackbar.snackbar--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* --- Footer ----------------------------------------------------------------- */
+
+.site-footer {
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem) clamp(0.75rem, 3vw, 1.5rem);
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.75rem, 2vw, 0.85rem);
+}
+
+/* --- Bewegungsreduktion (Story 16 / 8.5) ---------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
