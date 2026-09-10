@@ -4,3 +4,9 @@ __pycache__/
 .claude/settings.local.json
 .claude-run.log
 .claude-stream.jsonl
+
+# Interne Dateien der Entwicklungsumgebung - gehoeren nicht ins oeffentliche Repo
+AUFTRAG.md
+CLAUDE.md
+.mcp.json
+.claude/
