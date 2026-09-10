@@ -36,7 +36,10 @@ function makeFakeDocument(options) {
     },
     body: {
       appendChild(el) { calls.appendChild++; },
-      removeChild(el) { calls.removeChild++; }
+      removeChild(el) {
+        calls.removeChild++;
+        if (opts.removeChildThrows) { throw new Error('removeChild failed'); }
+      }
     }
   };
   doc._calls = calls;
@@ -107,6 +110,26 @@ test('copyText: ohne document (kein body, kein execCommand) liefert false, wirft
   const doc = {}; // kein body, kein execCommand
   const result = await copyText('Ein Spruch', { navigator: nav, document: doc });
   assert.equal(result, false);
+});
+
+test('copyText: execCommand erfolgreich, aber removeChild wirft danach -> Ergebnis bleibt "execCommand" (kein Zweitfehler ueberschreibt den Erfolg)', async () => {
+  const nav = {};
+  const doc = makeFakeDocument({ execCommand: true, removeChildThrows: true });
+  const result = await copyText('Ein Spruch', { navigator: nav, document: doc });
+  assert.equal(result, 'execCommand');
+  assert.equal(doc._calls.removeChild, 1);
+});
+
+test('copyText: execCommand wirft UND removeChild wirft danach -> Ergebnis false, copyText wirft trotzdem nie', async () => {
+  const nav = {};
+  const doc = makeFakeDocument({
+    execCommand: () => { throw new Error('boom'); },
+    removeChildThrows: true
+  });
+  await assert.doesNotReject(() => copyText('Ein Spruch', { navigator: nav, document: doc }));
+  const result = await copyText('Ein Spruch', { navigator: nav, document: doc });
+  assert.equal(result, false);
+  assert.equal(doc._calls.removeChild, 2);
 });
 
 test('copyText: wirft nie synchron, auch wenn deps komplett fehlen', async () => {

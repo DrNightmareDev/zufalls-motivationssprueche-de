@@ -273,7 +273,7 @@ ist, zeigt ein `<noscript>`-Block einen kurzen Hinweissatz.
 | `renderQuote(elements, text)` | `void` | Schreibt `text` per `textContent` (**nie** `innerHTML`) in `#quote` und stößt die Fade-Animation an. |
 | `showNextQuote(state, elements)` | `void` | `state.bag.next()` → Index merken → `renderQuote`. |
 | `showSnackbar(elements, message, timeoutMs)` | `void` | Blendet die Snackbar ein, blendet sie nach `timeoutMs` (Default 2000) wieder aus; ein laufender Timer wird zurückgesetzt, nicht gestapelt. |
-| `handleCopyClick(state, elements)` | `Promise<void>` | Ruft `copyText(state.currentText)` und zeigt Erfolg oder ehrliche Fehlermeldung. |
+| `handleCopyClick(state, elements, deps)` | `Promise<void>` | Ruft `copyText(state.currentText, deps)` und zeigt Erfolg oder ehrliche Fehlermeldung. `deps` (`{ document, navigator }`) wird von `initApp` durchgereicht; fehlt es, greift `copyText` auf die echten globalen Objekte zurück. Ohne diese Durchreichung wäre die Funktion nur über einen `Object.defineProperty(global, …)`-Trick testbar (QA-Befund 6). |
 | `initApp(doc, quotes, options)` | `AppState` | Verdrahtet alles: Elemente holen, Bag bauen, ersten Spruch zeigen, Listener registrieren. `options.random` erlaubt deterministische Läufe. |
 | `bootstrap()` | `void` | `initApp(document, window.Aufwind.QUOTES)`; nur im `typeof document !== 'undefined'`-Guard. |
 
@@ -371,7 +371,11 @@ function shouldHandleNextKey(event) {
   var key = event.key;
   var isSpace  = (key === ' ' || key === 'Spacebar' || key === 'Space');
   var isRight  = (key === 'ArrowRight' || key === 'Right');
-  var isN      = (typeof key === 'string' && key.toLowerCase() === 'n' && !event.shiftKey);
+  // Shift wird bei „N“ bewusst NICHT ausgeschlossen (QA-Befund 5): Leertaste und
+  // Pfeil-rechts reagieren ebenfalls mit gedrücktem Shift, alles andere wäre für
+  // Nutzer:innen nicht nachvollziehbar. Strg/Cmd/Alt bleiben ausgeschlossen, sonst
+  // würden Browser-Shortcuts wie Strg+N gekapert.
+  var isN      = (typeof key === 'string' && key.toLowerCase() === 'n');
   if (!isSpace && !isRight && !isN) { return false; }
 
   // Kern der Doppelauslösungs-Vermeidung:

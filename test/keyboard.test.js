@@ -59,8 +59,11 @@ test('false waehrend IME-Komposition', () => {
   assert.equal(shouldHandleNextKey(makeEvent({ key: ' ', isComposing: true })), false);
 });
 
-test('N mit gedrueckter Shift-Taste wird nicht als N-Taste gewertet', () => {
-  assert.equal(shouldHandleNextKey(makeEvent({ key: 'N', shiftKey: true })), false);
+test('Shift+N loest den naechsten Spruch ebenso aus wie Shift+Leertaste/Shift+Pfeil-rechts', () => {
+  assert.equal(shouldHandleNextKey(makeEvent({ key: 'N', shiftKey: true })), true);
+  assert.equal(shouldHandleNextKey(makeEvent({ key: 'n', shiftKey: true })), true);
+  assert.equal(shouldHandleNextKey(makeEvent({ key: ' ', shiftKey: true })), true);
+  assert.equal(shouldHandleNextKey(makeEvent({ key: 'ArrowRight', shiftKey: true })), true);
 });
 
 test('event.repeat wird bewusst nicht gefiltert (Dauerdruecken erlaubt)', () => {

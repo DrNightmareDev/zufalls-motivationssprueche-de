@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<!-- Bewusst keine Meta-CSP: Bei Aufruf ueber file:// (Doppelklick auf index.html - ein
+     ausdrueckliches Akzeptanzkriterium) behandeln Browser den Origin als opak, wodurch
+     default-src 'self' das Laden von assets/ blockieren kann. Der Schutz waere hier rein
+     praeventiv (Security-Review: null Befunde, keine externen Requests, kein innerHTML).
+     Nachruestbar, sobald jemand die Seite in echten Browsern gegenpruefen kann. -->
 <title>Aufwind – Ein Spruch für jetzt.</title>
 <meta name="description" content="Aufwind zeigt dir bei jedem Besuch einen zufälligen, selbst formulierten deutschen Motivationsspruch – ohne Anmeldung, ohne Tracking.">
 <link rel="stylesheet" href="assets/style.css">

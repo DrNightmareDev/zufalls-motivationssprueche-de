@@ -86,7 +86,10 @@
     var key = event.key;
     var isSpace = (key === ' ' || key === 'Spacebar' || key === 'Space');
     var isRight = (key === 'ArrowRight' || key === 'Right');
-    var isN = (typeof key === 'string' && key.toLowerCase() === 'n' && !event.shiftKey);
+    // Shift wird bei N absichtlich NICHT ausgeschlossen (anders als bei
+    // Ctrl/Meta/Alt oben) - Leertaste und Pfeil-rechts funktionieren mit
+    // gedruecktem Shift ebenfalls, N soll sich nicht anders verhalten.
+    var isN = (typeof key === 'string' && key.toLowerCase() === 'n');
     if (!isSpace && !isRight && !isN) { return false; }
 
     // Kern der Doppelauslösungs-Vermeidung: Hat ein Button/Link den Fokus,
@@ -126,7 +129,14 @@
     } catch (err) {
       ok = false;
     } finally {
-      doc.body.removeChild(area);
+      // copyText darf laut Vertrag nie werfen. Wuerde removeChild hier
+      // scheitern, duerfte dieser Zweitfehler weder den oben ermittelten
+      // Erfolg ueberschreiben noch aus copyText herauspropagieren.
+      try {
+        doc.body.removeChild(area);
+      } catch (cleanupErr) {
+        // bewusst ignoriert, siehe Kommentar oben
+      }
     }
     return ok ? 'execCommand' : false;
   }
@@ -165,8 +175,8 @@
 
   // --- 7.3 Rueckmeldung an den Nutzer (ehrlich, nicht geschoent) --------------
 
-  function handleCopyClick(state, elements) {
-    return copyText(state.currentText).then(function (result) {
+  function handleCopyClick(state, elements, deps) {
+    return copyText(state.currentText, deps).then(function (result) {
       if (result === 'clipboard' || result === 'execCommand') {
         showSnackbar(elements, 'Kopiert', 2000);
       } else {
@@ -230,6 +240,12 @@
       currentIndex: -1,
       currentText: ''
     };
+    // deps fuer copyText: dasselbe doc, das initApp erhalten hat, damit
+    // handleCopyClick nicht heimlich das globale document verwendet (im
+    // Browser ist das ohnehin dasselbe Objekt). opts.navigator ist nur fuer
+    // Tests gedacht; ohne Angabe faellt copyText selbst auf das echte
+    // globale navigator zurueck (siehe copyText-Default).
+    var copyDeps = { document: doc, navigator: opts.navigator };
 
     try {
       state.bag = createShuffleBag(list.length, { random: opts.random });
@@ -243,7 +259,7 @@
     });
 
     elements.copyButton.addEventListener('click', function () {
-      handleCopyClick(state, elements);
+      handleCopyClick(state, elements, copyDeps);
     });
 
     doc.addEventListener('keydown', function (event) {

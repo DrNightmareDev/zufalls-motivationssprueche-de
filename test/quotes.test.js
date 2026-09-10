@@ -63,6 +63,19 @@ test('no quote contains a straight apostrophe', function () {
   });
 });
 
+test('quote lengths spread noticeably between very short and longer one-to-two-sentence quotes', function () {
+  var veryShort = QUOTES.filter(function (quote) { return quote.length <= 40; });
+  var longer = QUOTES.filter(function (quote) { return quote.length >= 80; });
+  assert.ok(
+    veryShort.length >= 20,
+    'expected at least 20 quotes with length <= 40, got ' + veryShort.length
+  );
+  assert.ok(
+    longer.length >= 12,
+    'expected at least 12 quotes with length >= 80, got ' + longer.length
+  );
+});
+
 test('no quote contains HTML angle brackets', function () {
   QUOTES.forEach(function (quote) {
     assert.ok(!/[<>]/.test(quote), 'quote contains HTML-like characters: "' + quote + '"');
